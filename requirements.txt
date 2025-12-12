@@ -1,0 +1,20 @@
+fastapi
+uvicorn
+sentence-transformers
+scikit-learn
+openai
+pandas
+
+# Document processing
+pypdf
+python-docx
+python-pptx
+
+# Excel handling
+openpyxl
+
+# Type hints support
+typing-extensions
+
+# Data structures
+dataclasses
