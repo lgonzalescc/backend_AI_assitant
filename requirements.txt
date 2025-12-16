@@ -1,20 +1,19 @@
+# Web
 fastapi
 uvicorn
+
+# ML / Embeddings
+numpy==1.26.4
+torch
 sentence-transformers
 scikit-learn
-openai
+
+# Data / APIs
 pandas
+openai
 
 # Document processing
 pypdf
 python-docx
 python-pptx
-
-# Excel handling
 openpyxl
-
-# Type hints support
-typing-extensions
-
-# Data structures
-dataclasses
