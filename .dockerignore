@@ -1,0 +1,6 @@
+venv/
+chunks.xlsx
+corpus_hash.txt
+__pycache__/
+.gitignore
+.DS_Store

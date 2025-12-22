@@ -318,7 +318,7 @@ def normalize_name(name: str) -> str:
     return name
 
 def load_sources_reference_map(project_root: str) -> Dict[str, Dict[str, str]]:
-    excel_path = os.path.join(project_root, 'reference', 'Sources - P&R Hub 1.xlsx')
+    excel_path = os.path.join(project_root, 'reference', 'SourcesHub_1.xlsx')
     if not os.path.exists(excel_path):
         logging.warning(f"Reference Excel not found: {excel_path}")
         return {}
@@ -476,6 +476,10 @@ class QueryRequest(BaseModel):
     query: str
     top_k: int = 200
     max_sentences: int = 5
+
+@app.get("/health")
+def health():
+    return {"status": "ok"}
 
 @app.post("/query")
 def process_query(request: QueryRequest):
