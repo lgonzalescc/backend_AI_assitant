@@ -8,8 +8,7 @@ from typing import List, Tuple, Dict, Optional
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
+
 import numpy as np
 from dataclasses import dataclass
 from openai import OpenAI
@@ -40,8 +39,6 @@ class Chunk:
 # Global variables
 chunks: List[Chunk] = []
 embeddings: np.ndarray = np.array([])
-model: SentenceTransformer = None
-device = 'cpu'  # or 'cuda' if available
 
 def normalize_whitespace(text: str) -> str:
     if not text:
@@ -379,20 +376,36 @@ def evaluate_top_sources(output: str, ranked: List[Tuple[Chunk, float]]) -> List
         return []
 
 def build_embeddings_index(chunks: List[Chunk]) -> np.ndarray:
-    embs = model.encode([c.text for c in chunks], device=device, normalize_embeddings=False)
-    return np.asarray(embs, dtype=np.float32)
+    return get_openai_embeddings([c.text for c in chunks])
 
-def rank_chunks(query: str, model: SentenceTransformer, embeddings: np.ndarray, chunks: List[Chunk], top_k: int = 25) -> List[Tuple[Chunk, float]]:
+
+def rank_chunks(query: str, embeddings: np.ndarray, chunks: List[Chunk], top_k: int = 25) -> List[Tuple[Chunk, float]]:
     if not query.strip() or embeddings.shape[0] == 0:
         return []
-    q_vec = model.encode([query], device=device, normalize_embeddings=False)
-    sims = cosine_similarity(q_vec, embeddings)[0]
+    q_vec = get_openai_embeddings([query])[0]
+    sims = cosine_sim(q_vec, embeddings)
     scored = [(idx, float(s)) for idx, s in enumerate(sims) if s > 0.0]
     scored.sort(key=lambda x: x[1], reverse=True)
     out = []
     for idx, s in scored[:top_k]:
         out.append((chunks[idx], s))
     return out
+
+def cosine_sim(query_vec: np.ndarray, matrix: np.ndarray) -> np.ndarray:
+    query_vec = query_vec / np.linalg.norm(query_vec)
+    matrix = matrix / np.linalg.norm(matrix, axis=1, keepdims=True)
+    return np.dot(matrix, query_vec)
+
+
+def get_openai_embeddings(texts: List[str]) -> np.ndarray:
+    client = OpenAI()
+    resp = client.embeddings.create(
+        model="text-embedding-3-small",
+        input=texts
+    )
+    vectors = [d.embedding for d in resp.data]
+    return np.array(vectors, dtype=np.float32)
+
 
 # Add other functions from the snippet, like extract_relevant_sentences, format_sources_lines, call_openai_generate, etc.
 
@@ -454,8 +467,7 @@ def call_openai_generate(query: str, ranked: List[Tuple[Chunk, float]], max_sent
 
 @app.on_event("startup")
 def startup():
-    global model, chunks, embeddings
-    model = SentenceTransformer('all-MiniLM-L6-v2')  # Adjust to the actual model used
+    global chunks, embeddings
     project_root = os.path.dirname(os.path.abspath(__file__))
     chunks = load_corpus(project_root)
     embeddings = build_embeddings_index(chunks)
@@ -470,7 +482,7 @@ def process_query(request: QueryRequest):
     try:
         project_root = os.path.dirname(os.path.abspath(__file__))
         name_to_link = load_name_to_link(project_root)
-        ranked = rank_chunks(request.query, model, embeddings, chunks, request.top_k)
+        ranked = rank_chunks(request.query, embeddings, chunks, request.top_k)
         answer = call_openai_generate(request.query, ranked, request.max_sentences, name_to_link=name_to_link)
         if not answer:
             answer = "Fallback answer"

@@ -1,0 +1,5 @@
+venv/
+__pycache__/
+chunks.xlsx
+corpus_hash.txt
+.DS_Store

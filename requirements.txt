@@ -1,19 +1,13 @@
-# Web
 fastapi
+pydantic
 uvicorn
 
-# ML / Embeddings
-numpy==1.26.4
-torch
-sentence-transformers
-scikit-learn
-
-# Data / APIs
+numpy
 pandas
-openai
+openpyxl
 
-# Document processing
 pypdf
 python-docx
 python-pptx
-openpyxl
+
+openai
